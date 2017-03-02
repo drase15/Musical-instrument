@@ -1,217 +1,66 @@
-*/                                                   
+/*
+Read a pair of numbers separated by a comma from the serial port, presumably sent by an Arduino
+Use the first number to control the amplitude and the second number the frequency of a sine wave
+*/
 
+import processing.serial.*;    // Serial port for communication with Arduino
+import ddf.minim.*;            // Minim library for generating sounds
+import ddf.minim.signals.*;  // Minim library that provides sine wave
 
-import ddf.minim.*; //import sound library so can play sounds
-import processing.serial.*; //import the Serial library so can read from arudino input via serial communication
+Serial myPort;        // The serial port
+float freq;           // sine wave frequency
+float amp;            // sine wave amplitude
 
-int end = 10;    // the number 10 is ASCII for linefeed (end of serial.println), later we will look for this to break up individual messages
-String serial;   // declare a new string called 'serial' 
-Serial port;  // The serial port, this is a new instance of the Serial class (an Object)
+Minim       minim;    // a Minim object
+AudioOutput out;      // our audio output
+SineWave sine;        // a function to generate the values of a sine wave
 
-Minim minim;
+void setup () {
+  // Open whatever port is the one you're using.
+  // DON'T FORGET TO CHANGE THIS FOR YOUR COMPUTER
+  myPort = new Serial(this, Serial.list()[2], 9600);
 
-// declare audioSample variables where you will store the different sounds, 
-//in this version there are three different instruments Piano/Pipe organ and drums
-AudioSample piano1;
-AudioSample piano2;
-AudioSample piano3;
-AudioSample piano4;
-AudioSample piano5;
-AudioSample piano6;
-AudioSample piano7;
+  // don't generate a serialEvent() unless you get a newline character:
+  myPort.bufferUntil('\n');
 
-AudioSample pipes1;
-AudioSample pipes2;
-AudioSample pipes3;
-AudioSample pipes4;
-AudioSample pipes5;
-AudioSample pipes6;
-AudioSample pipes7;
+  minim = new Minim(this); // Instantiate the minim object
 
-AudioSample kit1;
-AudioSample kit2;
-AudioSample kit3;
-AudioSample kit4;
-AudioSample kit5;
-AudioSample kit6;
-AudioSample kit7;
+  // Connect the output of Minim to the audio output 
+  // of my laptop
+  out = minim.getLineOut(Minim.STEREO);  
 
-// this counter will determine if you have changed instrument or not
-int counter;
+  // create a sine wave oscillator
+  // Frequency = 440 Hz
+  // Amplitude = 0.5
+  // Use the same sample rate as my output  
+  sine = new SineWave(440, 0.5, out.sampleRate()); 
 
+  //connect the sine wave generator to my audio output
+  out.addSignal(sine);
+}
+void draw () {
+  sine.setFreq( freq );
+  sine.setAmp( amp );
 
-void setup() {
-  
-  // create a new instance of minim
-  minim = new Minim(this);
-  
-  //load sound.wav files from data folder and assign them to the variables previous made
-   piano1 = minim.loadSample( "piano-a.wav", 512);
-   piano2 = minim.loadSample( "piano-b.wav", 512);
-   piano3 = minim.loadSample( "piano-c.wav", 512);
-   piano4 = minim.loadSample( "piano-d.wav", 512);
-   piano5 = minim.loadSample( "piano-e.wav", 512);
-   piano6 = minim.loadSample( "piano-f.wav", 512);
-   piano7 = minim.loadSample( "piano-g.wav", 512);
-   
-   pipes1 = minim.loadSample( "HeavyPipesF-01.wav", 512);
-   pipes2 = minim.loadSample( "HeavyPipesF-02.wav", 512);
-   pipes3 = minim.loadSample( "HeavyPipesF-03.wav", 512);
-   pipes4 = minim.loadSample( "HeavyPipesC-01.wav", 512);
-   pipes5 = minim.loadSample( "HeavyPipesC-02.wav", 512);
-   pipes6 = minim.loadSample( "HeavyPipesC-03.wav", 512);
-   pipes7 = minim.loadSample( "HeavyPipesC-04.wav", 512);
-   
-   kit1 = minim.loadSample( "HHCLOSE1.wav", 512);
-   kit2 = minim.loadSample( "HHOPEN2.wav", 512);
-   kit3 = minim.loadSample( "SNARE1.wav", 512);
-   kit4 = minim.loadSample( "TOM2.wav", 512);
-   kit5 = minim.loadSample( "TOM3.wav", 512);
-   kit6 = minim.loadSample( "Bdrum1.wav", 512);
-   kit7 = minim.loadSample( "COWBELL1.wav", 512);
-  
-  //serial reading code
-  port = new Serial(this, Serial.list()[1], 9600); // initializing the object by assigning a port and baud rate (must match that of Arduino)
-  port.clear();  // function from serial library that throws out the first reading, in case we started reading in the middle of a string from Arduino
-  serial = port.readStringUntil(end); // function that reads the string from serial port until a println and then assigns string to our string variable (called 'serial')
-  serial = null; // initially, the string will be null (empty)
+ // println(freq + ',' + amp);
 }
 
-void draw() {
-  
-  //if there is data coming from the serial port read it/ store it
-  while (port.available() > 0) { 
-    serial = port.readStringUntil(end);
-  }
-  
-  //if the string is not empty, do this
-  if (serial != null) {  
-        //capsense Input form Arduino, each value is seperated and split depending on the ','
-        //and then saved in seperate cells of the array so we can access each 
-        String[] nailSensorInput = split(serial, ','); 
-       //can help to print these to console at this point to check it's working
-       // println(nailSensorInput[]); 
-        
-        //convert the string inputs that are stored in the photoresistorInput array to ints so we can use them numerically
-        int PRInt [];//Array that we will store the the photoresistor Input from Arduino after we have converted it to int
-        PRInt = int(nailSensorInput);
-        
-        //print all values int values helps for recallobration
-//       for(int i =0; i < PRInt.length; i++) {
-//          println(PRInt[i]);
-//       }
-   
-// **************************COUNTER 2 CHANGE INSTRUMENT*********************************
-// will have to recallabrate to what your sensors are outputting when you touch
-   if(PRInt[1] > 40 && PRInt[1] < 70) {
-      counter = 3;
-   }
-   else if (PRInt[8] > 70 && PRInt[8] < 110) {
-      counter = 2;
-   }
-   else if (PRInt[9] > 140 && PRInt[9] < 170) {
-      counter = 3; 
-   }
+void serialEvent (Serial myPort) {
+  // get the ASCII string:
+  String inString = myPort.readStringUntil('\n');
 
-//***********************PIANO***************************
-//if counter = 1 than instrument chosen is the piano   
-if (counter == 1) {   
-   //the greater than number will have to be recallobrated to correspond to what your nail sensors are outputting when you touch them 
-   if(PRInt[0] > 100){
-        piano1.trigger();
-        delay(150); //the delay isn't neccessary, it can however create an arpeggio effect rather than a chord effect when strung together
-   }
-  if(PRInt[1] > 100){
-        piano2.trigger();
-        delay(150);
-  }
-  if(PRInt[2] > 100){
-          piano3.trigger();
-          delay(150);
-  }
-  if(PRInt[3] > 100){
-        piano4.trigger();
-        delay(150);
-  }
-  if(PRInt[4] > 100){
-        piano5.trigger();
-        delay(150);
-  }
-  if(PRInt[5] > 100){
-        piano6.trigger();
-        delay(150);
-  }
-  if(PRInt[6] > 100){
-        piano7.trigger();
-        delay(150);
-  }
-} // END OF PIANO CODE*******************************************
+  if (inString != null) {
+    // println(inString);
+    // trim off any whitespace:
+    inString = trim(inString);
+    // split the input string at the commas
+    // and convert the sections into integers:
+    int sensors[] = int(split(inString, '\t'));
 
-
-//******************************PIPE ORGAN*******************************
-if (counter == 2) {    
-   if(PRInt[0] > 100){
-        delay(50);
-        pipes1.trigger();
-  }
-  if(PRInt[1] > 100){
-        delay(50);
-        pipes2.trigger();
-  }
-  if(PRInt[2] > 100){
-          delay(50);
-          pipes3.trigger();
-  }
-  if(PRInt[3] > 100){
-        delay(50);
-        pipes4.trigger();
-  }
-  if(PRInt[4] > 100){
-        delay(50);
-        pipes5.trigger();
-  }
-  if(PRInt[5] > 100){
-        delay(50);
-        pipes6.trigger();
-        
-  }if(PRInt[6] > 100){
-        delay(50);
-        pipes7.trigger();
-  }
-} //**********************************END PIPE ORGAN*****************************
-
-//*********************************DRUM KIT**************************************
-if(counter == 3) {    
-   if(PRInt[0] > 100){
-        delay(150);
-         kit1.trigger();
-  }
-  if(PRInt[1] > 100){
-        delay(150);
-        kit2.trigger();
-  }
-  if(PRInt[2] > 100){
-          delay(150);
-           kit3.trigger();
-  }
-  if(PRInt[3] > 100){
-        delay(150);
-         kit4.trigger();
-  }
-  if(PRInt[4] > 100){
-        delay(150);
-         kit5.trigger();
-  }
-  if(PRInt[5] > 100){
-        delay(150);
-         kit6.trigger();
-        
-  }if(PRInt[6] > 100){
-        delay(150);
-         kit7.trigger();
-  }
-}//*********************************END DRUM KIT**************************************
-
-  }//*****************END SERIAL DOING STUFF************** 
-  
+    // if we have received all the sensor values, use them:
+    if (sensors.length == 2) {
+      amp = map(sensors[1], 0, 1023, 0, 1);
+      freq = map(sensors[0], 0, 1023, 110, 880);
     }
+  }
+}
