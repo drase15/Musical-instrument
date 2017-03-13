@@ -8,9 +8,13 @@ My musical instrument uses 2 cap sensors, made from conductive paint on two piec
 ![alt text](http://i.imgur.com/pjWeewf.jpg)
 ![alt text](http://i.imgur.com/EgoIhr2.jpg)
 
+
+
+
+
 Arduino Code for Capsense
 
-#include <CapacitiveSensor.h>
+include <CapacitiveSensor.h>
 
 /*
  * CapitiveSense Library Demo Sketch
@@ -49,6 +53,11 @@ void loop()
 
     delay(10);                             // arbitrary delay to limit data to serial port 
 }
+
+
+
+
+
 
 
 Processing Code
